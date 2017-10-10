@@ -19,6 +19,13 @@
 
 package org.jboss.logmanager.ext.handlers;
 
+import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.ExtLogRecord;
+import org.jboss.logmanager.handlers.SslTcpOutputStream;
+import org.jboss.logmanager.handlers.TcpOutputStream;
+import org.jboss.logmanager.handlers.UdpOutputStream;
+import org.jboss.logmanager.handlers.UninterruptibleOutputStream;
+
 import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
@@ -31,19 +38,13 @@ import java.net.UnknownHostException;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 
-import org.jboss.logmanager.ExtHandler;
-import org.jboss.logmanager.ExtLogRecord;
-import org.jboss.logmanager.handlers.SslTcpOutputStream;
-import org.jboss.logmanager.handlers.TcpOutputStream;
-import org.jboss.logmanager.handlers.UdpOutputStream;
-import org.jboss.logmanager.handlers.UninterruptibleOutputStream;
-
 /**
  * A handler used to communicate over a socket.
  *
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  */
 public class SocketHandler extends ExtHandler {
+
 
     /**
      * The type of socket
@@ -63,7 +64,8 @@ public class SocketHandler extends ExtHandler {
         SSL_TCP,
     }
 
-    public static final int DEFAULT_PORT = 4560;
+    private static final int DEFAULT_PORT = 4560;
+    private static final int DEFAULT_GRACE_PERIOD_MILLIS = 5000;
 
     // All the following fields are guarded by this
     private InetAddress address;
@@ -71,6 +73,8 @@ public class SocketHandler extends ExtHandler {
     private Protocol protocol;
     private Writer writer;
     private boolean initialize;
+    private TransportErrorManager em;
+    private int gracePeriodMillis;
 
     /**
      * Creates a socket handler with an address of {@linkplain java.net.InetAddress#getLocalHost() localhost} and port
@@ -130,6 +134,9 @@ public class SocketHandler extends ExtHandler {
         this.protocol = protocol;
         initialize = true;
         writer = null;
+        em = new TransportErrorManager();
+        setErrorManager(em);
+        gracePeriodMillis = DEFAULT_GRACE_PERIOD_MILLIS;
     }
 
     @Override
@@ -148,9 +155,11 @@ public class SocketHandler extends ExtHandler {
         }
         try {
             synchronized (this) {
-                if (initialize) {
+                if (initialize && em.millisSinceException() > gracePeriodMillis) {
                     initialize();
-                    initialize = false;
+                    if(em.isReset()) {
+                        initialize = false;
+                    }
                 }
                 if (writer == null) {
                     return;
@@ -160,6 +169,7 @@ public class SocketHandler extends ExtHandler {
             }
         } catch (Exception e) {
             reportError("Error writing log message", e, ErrorManager.WRITE_FAILURE);
+            internalClose();
         }
     }
 
@@ -174,11 +184,16 @@ public class SocketHandler extends ExtHandler {
     @Override
     public void close() throws SecurityException {
         checkAccess(this);
+        internalClose();
+        super.close();
+    }
+
+    private void internalClose() {
         synchronized (this) {
             safeClose(writer);
             writer = null;
+            initialize = true;
         }
-        super.close();
     }
 
     /**
@@ -259,7 +274,25 @@ public class SocketHandler extends ExtHandler {
         }
     }
 
+    /**
+     * @return the grace period to wait before re-initializing the connections after an error
+     */
+    public int getGracePeriodMillis() {
+        return gracePeriodMillis;
+    }
+
+    /**
+     * @param gracePeriodMillis the grace period to wait before re-initializing the connections after an error
+     */
+    public void setGracePeriodMillis(int gracePeriodMillis) {
+        checkAccess(this);
+        synchronized (this) {
+            this.gracePeriodMillis = gracePeriodMillis;
+        }
+    }
+
     private void initialize() {
+        em.reset();
         final Writer current = this.writer;
         boolean okay = false;
         try {
@@ -341,6 +374,28 @@ public class SocketHandler extends ExtHandler {
         } catch (Exception e) {
             reportError("Error on flush", e, ErrorManager.FLUSH_FAILURE);
         } catch (Throwable ignored) {
+        }
+    }
+
+    /** internal ErrorManager with timestamps */
+    private static class TransportErrorManager extends ErrorManager {
+        private Long lastExceptionTimestamp = null;
+
+        @Override
+        public void error(String msg, Exception ex, int code) {
+            lastExceptionTimestamp = System.currentTimeMillis();
+        }
+
+        void reset() {
+            lastExceptionTimestamp = null;
+        }
+
+        boolean isReset() {
+            return lastExceptionTimestamp == null;
+        }
+
+        long millisSinceException() {
+            return System.currentTimeMillis() - (lastExceptionTimestamp != null ? lastExceptionTimestamp : 0);
         }
     }
 }

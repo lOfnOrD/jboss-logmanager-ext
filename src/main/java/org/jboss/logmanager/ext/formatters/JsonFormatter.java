@@ -19,6 +19,9 @@
 
 package org.jboss.logmanager.ext.formatters;
 
+import javax.json.Json;
+import javax.json.JsonValue;
+import javax.json.stream.JsonGeneratorFactory;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.math.BigDecimal;
@@ -27,9 +30,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import javax.json.Json;
-import javax.json.JsonValue;
-import javax.json.stream.JsonGeneratorFactory;
 
 /**
  * A formatter that outputs the record into JSON format optionally printing details.
@@ -46,7 +46,6 @@ import javax.json.stream.JsonGeneratorFactory;
  *
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  */
-@SuppressWarnings("unused")
 public class JsonFormatter extends StructuredFormatter {
 
     private final Map<String, Object> config;
@@ -56,8 +55,8 @@ public class JsonFormatter extends StructuredFormatter {
     /**
      * Creates a new JSON formatter.
      */
-    public JsonFormatter() {
-        this(Collections.<Key, String>emptyMap());
+    JsonFormatter() {
+        this(Collections.emptyMap());
     }
 
     /**
@@ -65,7 +64,7 @@ public class JsonFormatter extends StructuredFormatter {
      *
      * @param keyOverrides a map of overrides for the default keys
      */
-    public JsonFormatter(final Map<Key, String> keyOverrides) {
+    JsonFormatter(final Map<Key, String> keyOverrides) {
         super(keyOverrides);
         config = new HashMap<>();
         factory = Json.createGeneratorFactory(config);
@@ -78,7 +77,9 @@ public class JsonFormatter extends StructuredFormatter {
      */
     public boolean isPrettyPrint() {
         synchronized (config) {
-            return (config.containsKey(javax.json.stream.JsonGenerator.PRETTY_PRINTING) ? (Boolean) config.get(javax.json.stream.JsonGenerator.PRETTY_PRINTING) : false);
+            return (config.containsKey(javax.json.stream.JsonGenerator.PRETTY_PRINTING)
+                    ? (Boolean) config.get(javax.json.stream.JsonGenerator.PRETTY_PRINTING)
+                    : false);
         }
     }
 

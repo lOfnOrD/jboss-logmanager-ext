@@ -19,11 +19,11 @@
 
 package org.jboss.logmanager.ext.util;
 
+import org.jboss.logmanager.config.ValueExpression;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import org.jboss.logmanager.config.ValueExpression;
 
 /**
  * A utility for parsing string values into objects.
@@ -38,8 +38,8 @@ public class ValueParser {
     /**
      * Parses a string of key/value pairs into a map.
      * <p>
-     * The key/value pairs are separated by a comma ({@code,}). The key and value are separated by an equals
-     * ({@code=}).
+     * The key/value pairs are separated by a comma ({@code ,}). The key and value are separated by an equals
+     * ({@code =}).
      * </p>
      * <p>
      * If a key contains a {@code \} or an {@code =} it must be escaped by a preceding {@code \}. Example: {@code

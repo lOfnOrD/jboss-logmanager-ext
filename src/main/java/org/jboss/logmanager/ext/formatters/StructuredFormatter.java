@@ -19,15 +19,14 @@
 
 package org.jboss.logmanager.ext.formatters;
 
-import java.io.Writer;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
-
 import org.jboss.logmanager.ExtFormatter;
 import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.ext.util.ValueParser;
+
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * An abstract class that uses a generator to help generate structured data from a {@link
@@ -41,12 +40,12 @@ import org.jboss.logmanager.ext.util.ValueParser;
  *
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  */
-@SuppressWarnings("unused")
 public abstract class StructuredFormatter extends ExtFormatter {
 
     /**
      * The key used for the structured log record data.
      */
+    @SuppressWarnings("unused")
     public enum Key {
         EXCEPTION("exception"),
         EXCEPTION_CAUSED_BY("causedBy"),
@@ -113,14 +112,11 @@ public abstract class StructuredFormatter extends ExtFormatter {
         DETAILED_AND_FORMATTED
     }
 
-    public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-    private final ThreadLocal<SimpleDateFormat> dateFormatThreadLocal = new ThreadLocal<SimpleDateFormat>() {
-        @Override
-        protected SimpleDateFormat initialValue() {
-            final String dateFormat = StructuredFormatter.this.datePattern;
-            return new SimpleDateFormat(dateFormat == null ? DEFAULT_DATE_FORMAT : dateFormat);
-        }
-    };
+    static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+    private final ThreadLocal<SimpleDateFormat> dateFormatThreadLocal = ThreadLocal.withInitial(() -> {
+        final String dateFormat = StructuredFormatter.this.datePattern;
+        return new SimpleDateFormat(dateFormat == null ? DEFAULT_DATE_FORMAT : dateFormat);
+    });
 
     private final Map<Key, String> keyOverrides;
     // Guarded by this
@@ -132,11 +128,7 @@ public abstract class StructuredFormatter extends ExtFormatter {
     private volatile boolean addEolChar = true;
     private volatile ExceptionOutputType exceptionOutputType;
 
-    protected StructuredFormatter() {
-        this(Collections.<Key, String>emptyMap());
-    }
-
-    protected StructuredFormatter(final Map<Key, String> keyOverrides) {
+    StructuredFormatter(final Map<Key, String> keyOverrides) {
         this.printDetails = false;
         datePattern = DEFAULT_DATE_FORMAT;
         this.keyOverrides = keyOverrides;
@@ -179,7 +171,7 @@ public abstract class StructuredFormatter extends ExtFormatter {
      *
      * @return the overridden key or the default key if no override exists
      */
-    protected final String getKey(final Key defaultKey) {
+    final String getKey(final Key defaultKey) {
         if (keyOverrides.containsKey(defaultKey)) {
             return keyOverrides.get(defaultKey);
         }

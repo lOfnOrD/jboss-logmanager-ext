@@ -19,10 +19,10 @@
 
 package org.jboss.logmanager.ext.formatters;
 
+import org.jboss.logmanager.ExtLogRecord;
+
 import java.util.Collections;
 import java.util.Map;
-
-import org.jboss.logmanager.ExtLogRecord;
 
 /**
  * A {@link org.jboss.logmanager.ext.formatters.JsonFormatter JSON formatter} which adds the {@code @version} to
@@ -55,7 +55,13 @@ public class LogstashFormatter extends JsonFormatter {
 
     @Override
     protected void before(final Generator generator, final ExtLogRecord record) throws Exception {
+        super.before(generator, record);
         generator.add("@version", version);
+    }
+
+    @Override
+    protected void after(Generator generator, ExtLogRecord record) throws Exception {
+        super.after(generator, record);
     }
 
     /**

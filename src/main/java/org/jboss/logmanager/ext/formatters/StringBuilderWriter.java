@@ -37,11 +37,11 @@ final class StringBuilderWriter extends Writer {
 
     private final StringBuilder builder;
 
-    public StringBuilderWriter() {
+    StringBuilderWriter() {
         this(new StringBuilder());
     }
 
-    public StringBuilderWriter(final StringBuilder builder) {
+    private StringBuilderWriter(final StringBuilder builder) {
         this.builder = builder;
     }
 
