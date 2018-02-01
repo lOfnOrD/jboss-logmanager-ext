@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/lOfnOrD/jboss-logmanager-ext.svg?style=svg)](https://circleci.com/gh/lOfnOrD/jboss-logmanager-ext)
+
 JBoss Log Manager Extended
 ============
 
